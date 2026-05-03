@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GNV Audit di Bordo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#eef2f7;color:#1a2b4a;font-size:14px;}
+.header{background:linear-gradient(135deg,#002a6e,#004ab5);color:white;padding:14px 16px 10px;position:sticky;top:0;z-index:200;box-shadow:0 3px 10px rgba(0,0,0,0.3);}
+.header h1{font-size:17px;font-weight:700;}
+.header-sub{font-size:11px;opacity:0.8;margin-top:2px;}
+
+/* NAVE BAR */
+.nave-bar{background:#e8f0fb;border-bottom:2px solid #c5d5ee;padding:10px 12px;display:flex;gap:8px;align-items:center;overflow-x:auto;position:sticky;top:52px;z-index:190;}
+.nave-bar::-webkit-scrollbar{display:none;}
+.nave-slot{flex-shrink:0;padding:8px 14px;border-radius:20px;border:2px solid #2b6cb0;background:white;color:#2b6cb0;font-size:12px;font-weight:700;cursor:pointer;position:relative;white-space:nowrap;}
+.nave-slot.active{background:#2b6cb0;color:white;}
+.nave-del{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#e53e3e;color:white;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:900;border:none;}
+.nave-new{flex-shrink:0;padding:8px 14px;border-radius:20px;border:2px dashed #2b6cb0;background:transparent;color:#2b6cb0;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* META */
+.meta-card{background:white;margin:10px 12px 6px;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+.meta-card h2{font-size:11px;font-weight:700;color:#002a6e;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mf label{display:block;font-size:10px;color:#7a8eac;margin-bottom:3px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+.mf input{width:100%;border:1.5px solid #d8e2ee;border-radius:8px;padding:9px 10px;font-size:14px;color:#1a2b4a;outline:none;background:#f7fafd;}
+.mf input:focus{border-color:#004ab5;}
+.mf.full{grid-column:1/-1;}
+
+/* DEPT TABS */
+.dept-tabs{display:flex;overflow-x:auto;padding:8px 12px;gap:7px;background:white;border-bottom:2px solid #dde6f0;position:sticky;top:104px;z-index:180;}
+.dept-tabs::-webkit-scrollbar{display:none;}
+.dept-tab{flex-shrink:0;padding:8px 15px;border-radius:20px;border:2px solid #003087;background:white;color:#003087;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.dept-tab.active{background:#003087;color:white;}
+
+/* SECTIONS */
+.section-container{margin:8px 12px;border-radius:12px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,0.08);}
+.sec-head{background:#1a3a6e;color:white;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.sec-head h3{font-size:13px;font-weight:700;flex:1;}
+.sec-score{font-size:11px;background:rgba(255,255,255,0.2);padding:4px 9px;border-radius:12px;white-space:nowrap;margin-left:8px;font-weight:600;}
+.sec-score.g{background:rgba(72,187,120,0.4);} .sec-score.o{background:rgba(237,137,54,0.4);} .sec-score.r{background:rgba(229,62,62,0.4);}
+.sec-chev{margin-left:6px;font-size:10px;transition:transform 0.2s;display:inline-block;}
+.sec-body{background:white;}
+.item-row{padding:11px 14px;border-bottom:1px solid #f0f4f9;}
+.item-row:last-child{border-bottom:none;}
+.item-lbl{font-size:12px;color:#2d4a7a;margin-bottom:8px;line-height:1.4;font-weight:500;}
+.item-ctrl{display:flex;align-items:center;gap:8px;}
+.sbts{display:flex;gap:4px;}
+.sbt{width:36px;height:36px;border-radius:50%;border:2px solid #d1d9e6;background:#f7fafd;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#8096b5;}
+.sbt.s0{background:#e53e3e;border-color:#c53030;color:white;}
+.sbt.s1{background:#ed8936;border-color:#c05621;color:white;}
+.sbt.s2{background:#ecc94b;border-color:#b7791f;color:white;}
+.sbt.s3{background:#68d391;border-color:#2f855a;color:white;}
+.sbt.s4{background:#38a169;border-color:#276749;color:white;}
+.sbt.s5{background:#276749;border-color:#1c4532;color:white;}
+.sbt.sna{width:auto;padding:0 7px;border-radius:10px;font-size:11px;border-color:#718096;color:#718096;}
+.sbt.sna.active-na{background:#718096;color:white;border-color:#4a5568;}
+.nbt{width:36px;height:36px;border-radius:50%;border:2px solid #d1d9e6;background:#f7fafd;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.nbt.on{border-color:#3182ce;background:#ebf8ff;}
+.nota{display:none;margin-top:8px;}
+.nota textarea{width:100%;border:1.5px solid #d1d9e6;border-radius:8px;padding:8px 10px;font-size:12px;color:#1a2b4a;resize:vertical;min-height:60px;font-family:inherit;outline:none;background:#f7fafd;}
+.nota textarea:focus{border-color:#3182ce;}
+
+/* SUMMARY */
+.sumcard{background:white;margin:10px 12px;border-radius:12px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+.sumcard h2{font-size:11px;font-weight:700;color:#002a6e;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
+.sumrow{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #f0f4f9;}
+.sumrow:last-child{border-bottom:none;padding-top:10px;margin-top:4px;}
+.sname{font-size:13px;font-weight:500;flex:1;}
+.sbar-w{flex:1;margin:0 10px;}
+.sbar{height:6px;background:#e0e8f0;border-radius:3px;}
+.sfill{height:100%;border-radius:3px;}
+.sfill.g{background:#38a169;} .sfill.o{background:#ed8936;} .sfill.r{background:#e53e3e;}
+.sval{text-align:right;font-size:12px;font-weight:600;min-width:68px;}
+.sval.g{color:#276749;} .sval.o{color:#c05621;} .sval.r{color:#c53030;}
+.sumtot .sname{font-weight:700;font-size:14px;}
+
+/* LEGEND */
+.legend{display:flex;gap:7px;padding:6px 12px 4px;flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:#7a8eac;}
+.ld{width:13px;height:13px;border-radius:50%;flex-shrink:0;}
+
+/* ACTIONS */
+.actions{padding:10px 12px 6px;display:flex;gap:7px;flex-wrap:wrap;}
+.btn{flex:1;min-width:60px;padding:13px 6px;border-radius:11px;border:none;font-size:13px;font-weight:700;cursor:pointer;text-align:center;}
+.b1{background:#003087;color:white;}
+.b2{background:#1a3a6e;color:white;}
+.b3{background:#276749;color:white;}
+.b4{background:#6b46c1;color:white;}
+.b5{background:#e53e3e;color:white;flex:0.5;}
+.toast{text-align:center;font-size:12px;color:#276749;padding:4px 0 8px;display:none;font-weight:600;}
+.spacer{height:24px;}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;align-items:center;justify-content:center;}
+.overlay.on{display:flex;}
+.modal{background:white;border-radius:16px;padding:20px;margin:20px;max-width:380px;width:100%;}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:12px;}
+.modal input{width:100%;border:1.5px solid #d8e2ee;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;}
+.modal input:focus{border-color:#004ab5;}
+.mbts{display:flex;gap:8px;}
+.mbts button{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;}
+.mok{background:#003087;color:white;} .mno{background:#e2e8f0;color:#4a5568;}
+
+@media print{
+  @page{ size:A4 landscape; margin:8mm; }
+  body.is-printing > *:not(#printview){ display:none!important; }
+  body.is-printing #printview{ display:block!important; }
+}
+/* PRINT VIEW STYLES */
+#printview{ display:none; font-family:Arial,Helvetica,sans-serif; font-size:6.5pt; color:#000; background:white; }
+.pv-header{ margin-bottom:5pt; }
+.pv-header h1{ font-size:10pt; font-weight:bold; margin-bottom:3pt; }
+.pv-meta{ display:flex; gap:16pt; margin-bottom:6pt; font-size:7.5pt; border-bottom:1pt solid #000; padding-bottom:4pt; }
+.pv-meta span{ white-space:nowrap; }
+/* Righe di blocchi - 6 per riga */
+.pv-row-wrap{ display:flex; gap:2pt; margin-bottom:2pt; page-break-inside:avoid; break-inside:avoid; align-items:flex-start; }
+.pv-block{ border:0.75pt solid #333; flex:1 1 0; min-width:0; overflow:hidden; }
+.pv-block-empty{ border:none; flex:1 1 0; }
+/* Header blocco */
+.pv-row-head{ background:#1a3a6e !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; display:flex; }
+.pv-num-h{ width:10pt; min-width:10pt; text-align:center; border-right:0.5pt solid rgba(255,255,255,0.4); padding:2pt 0; font-size:5.5pt; color:white; flex-shrink:0; }
+.pv-dept{ font-size:5.5pt; font-weight:bold; padding:2pt 2pt; flex-shrink:0; border-right:0.5pt solid rgba(255,255,255,0.4); color:white; white-space:nowrap; }
+.pv-secname{ font-size:5pt; font-weight:bold; padding:2pt 2pt; flex:1; color:white; line-height:1.2; min-width:0; }
+.pv-score-h{ width:13pt; min-width:13pt; text-align:center; padding:2pt 0; font-size:5.5pt; color:white; border-left:0.5pt solid rgba(255,255,255,0.4); flex-shrink:0; }
+/* Righe item */
+.pv-row{ display:flex; border-bottom:0.4pt solid #bbb; }
+.pv-row:last-child{ border-bottom:none; }
+.pv-num{ width:10pt; min-width:10pt; text-align:center; border-right:0.4pt solid #bbb; padding:1pt 0; font-size:5.5pt; color:#666; flex-shrink:0; }
+.pv-text{ flex:1; padding:1pt 2pt; font-size:5.5pt; line-height:1.2; border-right:0.4pt solid #bbb; min-width:0; word-break:break-word; }
+.pv-score{ width:13pt; min-width:13pt; text-align:center; padding:1pt 0; font-size:6.5pt; font-weight:bold; flex-shrink:0; }
+.pv-score.filled{ background:#ddeeff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.pv-score.na-cell{ background:#eeeeee; color:#666; font-size:5pt; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.pv-empty .pv-text{ color:#ddd; }
+.pv-note{ display:block; font-style:italic; color:#444; font-size:5pt; margin-top:1pt; border-top:0.3pt solid #ddd; padding-top:1pt; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+/* Riepilogo */
+.pv-sum{ margin-top:6pt; border:0.75pt solid #333; page-break-inside:avoid; break-inside:avoid; }
+.pv-sum-head{ background:#1a3a6e !important; color:white; padding:3pt 6pt; font-size:7.5pt; font-weight:bold; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.pv-sum-row{ display:flex; border-bottom:0.4pt solid #ccc; padding:2pt 6pt; font-size:7pt; }
+.pv-sum-tot{ font-weight:bold; border-top:1pt solid #333; }
+.pv-sum-name{ flex:1; }
+.pv-sum-val{ min-width:55pt; text-align:right; }
+.pv-sum-pct{ min-width:35pt; text-align:right; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🚢 GNV — Audit di Bordo</h1>
+  <div class="header-sub" id="hsub">Caricamento...</div>
+</div>
+
+<div class="nave-bar" id="nave-bar"></div>
+
+<div class="meta-card">
+  <h2>Informazioni Audit</h2>
+  <div class="meta-grid">
+    <div class="mf"><label>Data</label><input type="date" id="mdata" onchange="onMeta()"></div>
+    <div class="mf"><label>Nave</label><input type="text" id="mnave" placeholder="es. GNV Azzurra" onchange="onMeta()"></div>
+    <div class="mf full"><label>Verificatore</label><input type="text" id="mver" placeholder="Nome e Cognome" onchange="onMeta()"></div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="li"><div class="ld" style="background:#e53e3e"></div>0 Assente</div>
+  <div class="li"><div class="ld" style="background:#ed8936"></div>1 Insufficiente</div>
+  <div class="li"><div class="ld" style="background:#ecc94b"></div>2 Parziale</div>
+  <div class="li"><div class="ld" style="background:#68d391"></div>3 Sufficiente</div>
+  <div class="li"><div class="ld" style="background:#38a169"></div>4 Buono</div>
+  <div class="li"><div class="ld" style="background:#276749"></div>5 Eccellente</div>
+</div>
+
+<div class="dept-tabs" id="dept-tabs"></div>
+<div id="content"></div>
+
+<div class="sumcard">
+  <h2>Riepilogo Punteggi</h2>
+  <div id="sumrows"></div>
+</div>
+
+<div class="actions">
+  <button class="btn b1" onclick="doSave()">💾 Salva</button>
+  <button class="btn b2" onclick="doExcel()">📊 Excel</button>
+  <button class="btn b3" onclick="doExport()">⬇️ Esporta</button>
+  <button class="btn b4" onclick="doImport()">⬆️ Importa</button>
+  <button class="btn b5" onclick="doReset()">🗑️</button>
+</div>
+<div class="toast" id="toast">✓ Salvato</div>
+<input type="file" id="fimport" accept=".json" style="display:none" onchange="onImport(event)">
+<div id="printview"></div>
+<div class="spacer"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Nuova Nave</h3>
+    <input type="text" id="minput" placeholder="es. GNV Azzurra" maxlength="40">
+    <div class="mbts">
+      <button class="mno" onclick="closeModal()">Annulla</button>
+      <button class="mok" onclick="confirmNave()">Crea</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATI REPARTI ─────────────────────────────────────────────
+var DEPTS = [
+  {id:'retail',name:'RETAIL',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI RINGRAZIA SEMPRE E COMUNQUE','L\'INTERAZIONE TRA COLLEGHI È COLLABORATIVA','SI CEDE SEMPRE IL PASSO AGLI OSPITI','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI','L\'IGIENE PERSONALE È BEN CURATA']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['SI APPLICANO TECNICHE DI UPSELLING, CROSS SELLING E DOWN SELLING','SI PUBBLICIZZANO IN MANIERA VERBALE LE EVENTUALI PROMOZIONI DI PRODOTTI','SI PROMUOVE LA VENDITA DI PRODOTTI O SERVIZI DI ALTRI REPARTI','MOSTRA CON ATTENZIONE I PRODOTTI ALL\'OSPITE']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['IL NEGOZIO È PULITO','IL NEGOZIO È SEMPRE PRESIDIATO','GLI ARTICOLI SONO ESPOSTI IN MODO ORDINATO','SONO PRESENTI ESPOSITORI CON SCONTI E PROMO','GLI ARTICOLI SONO CORRETTAMENTE ETICHETTATI E CON L\'ANTITACCHEGGIO']},
+    {n:5,name:'PROFESSIONALITÀ',items:['CONOSCENZA DEI PRODOTTI IN VENDITA','GESTISCE IN MANIERA EFFICIENTE EVENTUALI ATTESE O CODE','MANTIENE UN ATTEGGIAMENTO POSITIVO ANCHE SOTTO PRESSIONE','APPLICA CORRETTAMENTE LE REGOLE DI SICUREZZA ED IGIENE','MOSTRA SENSO DI APPARTENENZA ALL\'ORGANIZZAZIONE','SEGUE GLI STANDARD DI SERVIZIO SENZA IMPROVVISAZIONI']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['CONOSCENZA DEL MANUALE DI REPARTO','CASSA DI EMERGENZA','CAMBIO FISCALITÀ','RESO, ANNULLO E CAMBIO MERCE','CHIUSURA CONTABILE','RICHIESTA DI APPROVVIGIONAMENTO','DICHIARAZIONE DOGANALE','O.S.C.A.R','SPIEGARE LE PROCEDURE AL PERSONALE DI NUOVA ASSEGNAZIONE']},
+    {n:7,name:'ETICA SUL LAVORO',items:['IL PERSONALE SEGUE LE PROCEDURE AZIENDALI SENZA UTILIZZARE IL CELLULARE DURANTE L\'ORARIO LAVORATIVO','SI EVITA DI FUMARE NELLE AREE PASSEGGERE NEGLI ORARI DI LAVORO','NELL\'ORARIO LAVORATIVO SI EVITA DI CONSUMARE AL BAR']}
+  ]},
+  {id:'bar',name:'BAR',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI RINGRAZIA SEMPRE E COMUNQUE','L\'INTERAZIONE TRA COLLEGHI È COLLABORATIVA','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI','SI INTERAGISCE CON L\'OSPITE']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['VENDITA DI PRODOTTI CON TECNICHE DI UP/CROSS/DOWN SELLING','RINGRAZIA SEMPRE E INVITA L\'OSPITE A TORNARE','PRESENTA LE OPZIONI COME OPPORTUNITÀ','AGGIORNATI SULLE NOVITÀ DI BAR LIST E PROMOZIONI','MOSTRATI INTERESSATO E PRESENTE, SENZA INVADENZA','AUMENTA LA PERCEZIONE DI QUALITÀ E GIUSTIFICA IL PREZZO']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['IL BAR È PULITO E IN ORDINE','PRESIDIA SEMPRE IL BANCO DEL BAR','ARTICOLI SONO ESPOSTI IN MODO ORDINATO','SONO DISPONIBILI TUTTI I TIPI DI ATTREZZATURE COME DA MANUALE','DISPONIBILI I TIPI DI BICCHIERI COME DA MANUALE','ESPOSITORI CON SCONTI E PROMO','MACCHINE DEL GHIACCIO SONO PULITE E FUNZIONANTI','MACCHINE LAVABICCHIERI, FORNI E FRIGORIFERI FUNZIONANTI','TENERE SOTTO CONTROLLO SCORTE E CONSUMI','INFORMAZIONI PRODOTTI ECOLAB','DISTRIBUTORE GINSENG/ORZO DISPONIBILE','LA MISE EN PLACE È BEN ORGANIZZATA E ORDINATA','PRODOTTI DI SANITIZZAZIONE RIPOSTI IN MODO CORRETTO']},
+    {n:5,name:'PROFESSIONALITÀ',items:['ABILITÀ NELLA PREPARAZIONE DEI PRODOTTI DI CAFFETTERIA','ABILITÀ NELLA PREPARAZIONE DEI COCKTAILS','ATTEGGIAMENTO CALMO IN MOMENTI DI ALTA AFFLUENZA','NON MOSTRA STANCHEZZA O INSOFFERENZA DURANTE IL SERVIZIO','MANTIENE IL BANCO ORDINATO E PULITO DURANTE IL SERVIZIO','CONOSCENZA ORDINE DEI SERVIZI DI BORDO','ESEGUE CORRETTAMENTE APERTURA, CHIUSURA E REFILL','CONTROLLA SCORTE E MATERIALI NECESSARI','COLLABORA EFFICACEMENTE CON I COLLEGHI']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['CONOSCENZA DELLE PROCEDURE DI SANITÀ / HACCP','CONOSCENZA DEL MANUALE DEL BARISTA','CONOSCE LA BAR LIST','ALLESTIMENTO E ORGANIZZAZIONE DEL BAR','IL PIANO D\'IGIENE DEI PRODOTTI ECOLAB DEL PROPRIO REPARTO','MODALITÀ ESPRESSO PERFETTO']}
+  ]},
+  {id:'cassa',name:'CASSA',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI RINGRAZIA SEMPRE E COMUNQUE','L\'INTERAZIONE TRA COLLEGHI È COLLABORATIVA']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['VENDITA DI PRODOTTI CON TECNICHE DI UP/CROSS/DOWN SELLING','RINGRAZIA SEMPRE E INVITA L\'OSPITE A TORNARE','PRESENTA LE OPZIONI COME OPPORTUNITÀ','AGGIORNATI SULLE NOVITÀ DI BAR LIST E PROMOZIONI','MOSTRATI INTERESSATO E PRESENTE, SENZA INVADENZA']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['REGISTRATORE DI CASSA FUNZIONANTE','PRESIDIO CASSA','LISTINI PRESENTI','POS FUNZIONANTE','DISPOSITIVO PER LE BANCONOTE']},
+    {n:5,name:'PROFESSIONALITÀ',items:['ATTEGGIAMENTO CALMO IN MOMENTI DI ALTA AFFLUENZA','CONOSCENZA DEI PRODOTTI','NON MOSTRA STANCHEZZA O INSOFFERENZA DURANTE IL SERVIZIO','CASSA ORDINATA E PULITA','UTILIZZO CORRETTO DEL POS','GESTISCE CORRETTAMENTE LE OPERAZIONI DI PAGAMENTO','GESTIONE RECLAMI','ATTENZIONE ALL\'OSPITE']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['METODI DI PAGAMENTO','TIPOLOGIE DI FOOD PASS','VOUCHER PASTO','CONOSCENZA DELLA BAR LIST & MENÙ','FATTURAZIONE ELETTRONICA','CARTE DI CREDITO-DEBITO ACCETTATI','GESTIONE INVENTARIO','CONOSCENZA PROPRIA UNIFORME']}
+  ]},
+  {id:'restaurant',name:'RESTAURANT',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI CEDE IL PASSO AGLI OSPITI','SI RINGRAZIA SEMPRE E COMUNQUE','L\'INTERAZIONE TRA COLLEGHI È COLLABORATIVA','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['VENDITA DI PRODOTTI CON TECNICHE DI UP/CROSS/DOWN SELLING','CONOSCENZA DEL PRODOTTO','INTERAZIONE CON L\'OSPITE PER PROPOSTA PRODOTTO','MENÙ BAMBINO ENFATIZZATO','PROMOZIONI DEL GIORNO','CONOSCENZA DEL PRODOTTO BEVERAGE']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['RISTORANTE PULITO ED IN ORDINE','STAZIONI DI SERVIZIO ORGANIZZATE','MISE EN PLACE','MENÙ DISPONIBILI ED IN BUONE CONDIZIONI','LAYOUT SEDIE','SECCHIELLI DEL GHIACCIO','SCHEDE ALLERGENI','CASSA ORDINATA, PULITA E FUNZIONANTE','VETRINA VINI','PRODOTTI PULIZIA ECOLAB','LOCKER PRODOTTI ECOLAB','WINE LIST','ARIA CONDIZIONATA']},
+    {n:5,name:'PROFESSIONALITÀ',items:['ACCOGLIENZA OSPITI','CORRETTA RICEZIONE ORDINE','PRIORITÀ A DONNE E BAMBINI','ORARI APERTURA E CHIUSURA','ACCOMODARE L\'OSPITE','PRESENTARSI ALL\'OSPITE','PRESENTAZIONE MENÙ','SERVIRE E RITIRO LATO DESTRO','SOSTITUZIONE POSATE PIATTO CON FRANGINO','DISCREZIONE DURANTE IL SERVIZIO','PAZIENZA IN ALTA AFFLUENZA','CORRETTA APERTURA VINO','CONOSCENZA CONTENUTI MENÙ']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['CONOSCENZA PUBLIC HEALTH – HACCP','CONOSCENZA PROCEDURE DI SICUREZZA','GESTIONE ANOMALIE PRODOTTO','L\'IMPORTANZA DELL\'IMMAGINE AZIENDALE NEL SERVIZIO','METODI DI PAGAMENTO','CORRETTA APPLICAZIONE PRODOTTI ED ALLERGENI']}
+  ]},
+  {id:'selfservice',name:'SELF SERVICE',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI CEDE IL PASSO AGLI OSPITI','SI RINGRAZIA SEMPRE E COMUNQUE','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI','SI INTERAGISCE CON L\'OSPITE']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['VENDITA DI PRODOTTI CON TECNICHE DI UP/CROSS/DOWN SELLING','CONOSCENZA DEL PRODOTTO','INTERAZIONE CON L\'OSPITE PER PROPOSTA PRODOTTO','PROMOZIONI DEL GIORNO','MENÙ BAMBINO ENFATIZZATO']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['ZONA REFRIGERAZIONE','ZONA CALDA','EQUIPMENT SERVIZIO','LAYOUT DI LINEA PRODOTTO','UTILIZZO DELLE LABELS','UTILIZZO DEI SIGN','PAVIMENTI ASCIUTTI E SENZA RESIDUI','KIT PRONTO SOCCORSO','ESTINTORI','USCITE DI SICUREZZA LIBERE']},
+    {n:5,name:'PROFESSIONALITÀ',items:['EVITARE QUESTIONI PERSONALI DURANTE IL SERVIZIO','SPIRITO DI SQUADRA E COLLABORAZIONE','MANTIENE CALMA IN SITUAZIONE DI PRESSIONE O AFFLUSSO ALTO','DISPONIBILITÀ E PROATTIVITÀ NELL\'AIUTARE L\'OSPITE','LINEA IN ORDINE E PULITA','ARRIVO IN ORARIO ALL\'INIZIO DEL TURNO','RISPETTA PAUSE E RIENTRI NEI TEMPI PREVISTI','APPLICA LE REGOLE DI IGIENE E HACCP','SIGNIFICATO SIMBOLO *','CONOSCENZA ALLERGENI E INGREDIENTI PRINCIPALI','LINEA REGOLARMENTE RIFORNITA']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['DIFFERENZIARE PULIZIA, DISINFEZIONE E SANIFICAZIONE','UTILIZZO DPI','L\'IMPORTANZA DELL\'IMMAGINE AZIENDALE NEL SERVIZIO','PRODOTTI ECOLAB – SANITÀ E MANUALE','GESTIONE ANOMALIE PRODOTTO','METODI DI PAGAMENTO','CORRETTA GESTIONE RIFIUTI']}
+  ]},
+  {id:'galley',name:'GALLEY',secs:[
+    {n:1,name:'GROOMING',items:['CORRETTO LINGUAGGIO DEL CORPO','DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','CAPELLI E/O BARBA SONO IN ORDINE','CUFFIETTA PER I CAPELLI','MANI PULITE – UNGHIE CURATE']},
+    {n:2,name:'ORGANIZZAZIONE DEL REPARTO',items:['POSTAZIONE CHIARA E ASSEGNATA','PULITA ED IN ORDINE','TIPI DI TAGLIERI PRESENTI','REPARTI DI SERVIZIO BEN ORGANIZZATI','FRIGORIFERI, ABBATTITORI, FORNI, FRIGGITRICI PULITI E FUNZIONANTI','SCHEDE TECNICHE PIATTI MENÙ','ETICHETTE PER ALIMENTI','PRODOTTI ECOLAB – SANITÀ E MANUALE','STORAGGIO PRODOTTI DI PULIZIA']},
+    {n:3,name:'PROFESSIONALITÀ',items:['CONTROLLO QUALITÀ E QUANTITÀ INGREDIENTI','SEGNALAZIONE MANCANZE O ANOMALIE','TECNICHE DI COTTURA','COLLABORAZIONE CON COLLEGHI E SUPERVISORI','CONOSCENZA MENÙ','UTILIZZO FORNI RATIONAL','DIFFERENZE FONDI, ROUX E SALSE','APPLICAZIONE SCORTE FIFO','PROCEDURE DI EMERGENZA','PUBLIC HEALTH – HACCP','PUNTUALITÀ E AFFIDABILITÀ']},
+    {n:4,name:'CONOSCENZA DELLE PROCEDURE',items:['ANOMALIE LINEE GUIDA','CODIFICA TAGLIERI – COLORE','SICUREZZA E PREVENZIONE INFORTUNI','QUANTITÀ E QUALITÀ DEI PRODOTTI','GESTIONI CRITICITÀ RISPETTANDO LE PROCEDURE','RICETTE STANDARD E PROTOCOLLI DI PREPARAZIONE','SCONGELAMENTO ALIMENTI']}
+  ]},
+  {id:'housekeeping',name:'HOUSEKEEPING',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI CEDE IL PASSO AGLI OSPITI','SI RINGRAZIA SEMPRE E COMUNQUE','L\'INTERAZIONE TRA COLLEGHI È COLLABORATIVA','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','EVITANO PROFUMI ECCESSIVAMENTE FORTI','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI']},
+    {n:3,name:'ORGANIZZAZIONE DEL REPARTO',items:['SI CONOSCE L\'ORGANIGRAMMA DEL REPARTO','SEGNALETICA DI SICUREZZA','MASTER LIST DI SICUREZZA','REGISTRAZIONE INCIDENTI E SEGNALAZIONI','DISPONIBILITÀ DPI','COMPITI PER ZONE: CABINA, AREA EQUIPAGGIO, AREE PUBBLICHE E LAVANDERIA','CONTROLLO QUALITÀ BIANCHERIA','CHECK LIST DI CONTROLLO QUALITÀ','COMPILAZIONE CORRETTA FORM "CONTROLLO PULIZIA" BAGNI PUBBLICI','STANDARD DI RIFACIMENTO CABINE','STANDARD PULIZIA AREE PUBBLICHE / SALA POLTRONE','BAGNI PUBBLICI FORNITI DI LINEA CORTESIA','LAVANDERIA MANUTENZIONE / FUNZIONALITÀ']},
+    {n:4,name:'PROFESSIONALITÀ',items:['AFFIDABILITÀ PER I COMPITI ASSEGNATI','RISERVATEZZA / PRIVACY','REATTIVITÀ','SI È PERFETTAMENTE FORMATI PER GLI OSPITI DIVERSAMENTE ABILI','SEGNALAZIONI ANOMALIE / GUASTI','GESTIONE RECLAMI','COMUNICAZIONE EFFICACE CON GLI ALTRI REPARTI','GESTIONE DELLO STRESS','CONOSCENZA PRODOTTI DI PULIZIA','CONOSCENZA MACCHINARI DI PULIZIA','GESTIONE LOST & FOUND','ISTRUZIONI APPLICATE CORRETTAMENTE','LAVORARE SENZA DISTURBARE GLI OSPITI','COMPORTAMENTO PROFESSIONALE IN SITUAZIONI DI STRESS']},
+    {n:5,name:'CONOSCENZA DELLE PROCEDURE',items:['COMPOSIZIONE DPI','GUASTO TECNICO O EMERGENZA IN CABINA','PROCEDURA DI ALLARME O EVACUAZIONE NAVE']}
+  ]},
+  {id:'reception',name:'RECEPTION',secs:[
+    {n:1,name:'OSPITALITÀ',items:['SI SALUTANO GLI OSPITI PER PRIMI IN MANIERA ADEGUATA','SI SORRIDE E SI COMUNICA EDUCATAMENTE','SI ASCOLTA CON ATTENZIONE L\'OSPITE','SI RINGRAZIA SEMPRE E COMUNQUE','ACCOGLIENZA ED INTERAZIONE OSPITI SEMPRE IN PIEDI','ATTENZIONI PARTICOLARI A OSPITI: ANZIANI, BAMBINI E DIVERSAMENTE ABILI']},
+    {n:2,name:'GROOMING',items:['SI UTILIZZA UN CORRETTO LINGUAGGIO DEL CORPO','UTILIZZA DIVISE NON USURATE','UNIFORMI PULITE E IN ORDINE','IL BADGE È NELLA CORRETTA POSIZIONE','IGIENE PERSONALE È BEN CURATA','IL TRUCCO È LEGGERO','CAPELLI E/O BARBA SONO IN ORDINE','TATUAGGI E PIERCING CORRETTAMENTE COPERTI','EVITANO PROFUMI ECCESSIVAMENTE FORTI']},
+    {n:3,name:'ORIENTAMENTO ALLA VENDITA',items:['CONOSCE E PROMUOVE LA VENDITA DEI PRODOTTI DEI REPARTI','ORARI E INFO NECESSARI DEI REPARTI','CONOSCENZA UPGRADE CABINE']},
+    {n:4,name:'ORGANIZZAZIONE DEL REPARTO',items:['PULIZIA ED ORDINE DEL FRONT DESK','DESK PRESIDIATO','FORNITO DI MATERIALE CANCELLERIA','FORNITO DI TUTTI I TIPI DEI FORMS PREVISTI','SPEAKERS PER GLI ANNUNCI E RADIO PRESENTI E FUNZIONANTI','SISTEMA PRODUZIONE CHIAVI CABINE','TELEFONI FUNZIONANTI','LISTA DEGLI ANNUNCI MASTER']},
+    {n:5,name:'PROFESSIONALITÀ',items:['CONOSCENZA NAVE','CONOSCENZA ORDINE DI SERVIZIO','CONOSCENZA CARE TEAM','ANNUNCI PER GLI OSPITI COMPRENSIBILI','COMUNICARE RITARDI E CAMBI DI PROGRAMMA','GESTIONE RECLAMI','CORRETTO UTILIZZO DEL TELEFONO']},
+    {n:6,name:'CONOSCENZA DELLE PROCEDURE',items:['PROCEDURA CAMBIO CABINA','MODULO ASSISTENZA PMR','MODULO MANLEVA GRAVIDANZA – PATOLOGIA','TRASMISSIONE LISTA PAX','MODULO LOST & FOUND','UTILIZZO SOFTWARE GESTIONALE','SISTEMA GESTIONE CHIAVI','PROCEDURA GDPR','LATE CHECK-OUT E SBARCO ANTICIPATO','GESTIONE RECLAMI / CLAIMS']}
+  ]}
+];
+
+// ── STATO IN MEMORIA ─────────────────────────────────────────
+var slots = [];
+var cur = 0;
+var dept = 'retail';
+var open = {};
+
+function today(){ return new Date().toISOString().split('T')[0]; }
+function uid(){ return 'n'+Date.now(); }
+function slot(){ return slots[cur] || slots[0]; }
+
+function tryLS(fn){ try{ return fn(); }catch(e){ return null; } }
+
+function loadStorage(){
+  var raw = tryLS(function(){ return localStorage.getItem('gnv4'); });
+  if(raw){ try{ var p=JSON.parse(raw); slots=p.slots; cur=p.cur||0; return; }catch(e){} }
+  slots = [{id:uid(), meta:{date:today(),nave:'',verificatore:''}, scores:{}, notes:{}}];
+  cur = 0;
+}
+
+function saveStorage(){
+  tryLS(function(){ localStorage.setItem('gnv4', JSON.stringify({slots:slots,cur:cur})); });
+}
+
+// ── META ─────────────────────────────────────────────────────
+function syncMeta(){
+  slot().meta.date = document.getElementById('mdata').value;
+  slot().meta.nave = document.getElementById('mnave').value;
+  slot().meta.verificatore = document.getElementById('mver').value;
+}
+function loadMeta(){
+  var m = slot().meta;
+  document.getElementById('mdata').value = m.date||today();
+  document.getElementById('mnave').value = m.nave||'';
+  document.getElementById('mver').value = m.verificatore||'';
+}
+function onMeta(){ syncMeta(); saveStorage(); renderNaveBar(); }
+
+// ── NAVE BAR ─────────────────────────────────────────────────
+function renderNaveBar(){
+  var bar = document.getElementById('nave-bar');
+  var html = '';
+  for(var i=0;i<slots.length;i++){
+    var s = slots[i];
+    var label = (s.meta.nave||'Nave '+(i+1));
+    var d = s.meta.date ? ' '+s.meta.date.split('-').slice(1).reverse().join('/') : '';
+    var active = i===cur?' active':'';
+    html += '<div class="nave-slot'+active+'" onclick="switchSlot('+i+')">'+(label+d)+'<button class="nave-del" onclick="event.stopPropagation();delSlot('+i+')">✕</button></div>';
+  }
+  html += '<button class="nave-new" onclick="openModal()">+ Nuova nave</button>';
+  bar.innerHTML = html;
+  document.getElementById('hsub').textContent = (slot().meta.nave||'Audit') + ' — dati in memoria (esporta per salvare)';
+}
+
+function switchSlot(i){ syncMeta(); cur=i; loadMeta(); renderNaveBar(); renderDept(dept); updateSummary(); }
+
+function delSlot(i){
+  if(slots.length<=1){ alert('Devi avere almeno un audit.'); return; }
+  var nome = slots[i].meta.nave||'questo audit';
+  if(!confirm('Eliminare l\'audit di '+nome+'?')) return;
+  slots.splice(i,1);
+  if(cur>=slots.length) cur=slots.length-1;
+  saveStorage(); loadMeta(); renderNaveBar(); renderDept(dept); updateSummary();
+}
+
+// ── MODAL ────────────────────────────────────────────────────
+function openModal(){ document.getElementById('overlay').classList.add('on'); document.getElementById('minput').value=''; setTimeout(function(){ document.getElementById('minput').focus(); },100); }
+function closeModal(){ document.getElementById('overlay').classList.remove('on'); }
+function confirmNave(){
+  var name = document.getElementById('minput').value.trim();
+  if(!name){ alert('Inserisci il nome della nave.'); return; }
+  syncMeta();
+  slots.push({id:uid(), meta:{date:today(),nave:name,verificatore:''}, scores:{}, notes:{}});
+  cur = slots.length-1;
+  closeModal(); saveStorage(); loadMeta(); renderNaveBar(); renderDept(dept); updateSummary();
+}
+document.getElementById('minput').addEventListener('keydown',function(e){ if(e.key==='Enter') confirmNave(); });
+document.getElementById('overlay').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
+
+// ── SCORE ────────────────────────────────────────────────────
+function k(dId,sn,idx){ return dId+'_'+sn+'_'+idx; }
+
+function setScore(key,score){
+  // toggle: click same value again to deselect
+  if(slot().scores[key]===score){ delete slot().scores[key]; score=undefined; }
+  else { slot().scores[key]=score; }
+  for(var s=0;s<=5;s++){
+    var b=document.getElementById('b_'+key+'_'+s);
+    if(b) b.className='sbt'+(score===s?' s'+s:'');
+  }
+  var bna=document.getElementById('bna_'+key);
+  if(bna) bna.className='sbt sna'+(score==='na'?' active-na':'');
+  updSecScore(key);
+  updateSummary();
+  saveStorage();
+}
+
+function setNA(key){
+  if(slot().scores[key]==='na'){ delete slot().scores[key]; }
+  else { slot().scores[key]='na'; }
+  var score=slot().scores[key];
+  for(var s=0;s<=5;s++){
+    var b=document.getElementById('b_'+key+'_'+s);
+    if(b) b.className='sbt';
+  }
+  var bna=document.getElementById('bna_'+key);
+  if(bna) bna.className='sbt sna'+(score==='na'?' active-na':'');
+  updSecScore(key);
+  updateSummary();
+  saveStorage();
+}
+
+function updSecScore(key){
+  for(var di=0;di<DEPTS.length;di++){
+    var d=DEPTS[di];
+    for(var si=0;si<d.secs.length;si++){
+      var sec=d.secs[si];
+      if(key.indexOf(d.id+'_'+sec.n+'_')===0){
+        var r=calcSec(d.id,sec.n,sec.items);
+        var el=document.getElementById('ss_'+d.id+'_'+sec.n);
+        if(el){
+          if(r.scored===0){el.textContent='—';el.className='sec-score';return;}
+          var pct=Math.round((r.tot/r.max)*100);
+          el.textContent=r.tot+'/'+r.max+' ('+pct+'%)';
+          el.className='sec-score '+(pct>=80?'g':pct>=60?'o':'r');
+        }
+      }
+    }
+  }
+}
+
+function calcSec(dId,sn,items){
+  var sc=slot().scores, tot=0,max=0,scored=0;
+  for(var i=0;i<items.length;i++){
+    var v=sc[k(dId,sn,i)];
+    if(v==='na') continue; // escludi N/A dal calcolo
+    max+=5;
+    if(v!==undefined){tot+=v;scored++;}
+  }
+  return {tot:tot,max:max,scored:scored};
+}
+
+function calcDept(dId){
+  var d=DEPTS.filter(function(x){return x.id===dId;})[0];
+  var tot=0,max=0;
+  for(var si=0;si<d.secs.length;si++){
+    var sec=d.secs[si];
+    for(var i=0;i<sec.items.length;i++){
+      var v=slot().scores[k(dId,sec.n,i)];
+      if(v==='na') continue;
+      max+=5; tot+=(v||0);
+    }
+  }
+  return {tot:tot,max:max};
+}
+
+// ── NOTE ─────────────────────────────────────────────────────
+function toggleNota(key){
+  var el=document.getElementById('na_'+key);
+  if(!el) return;
+  var show=el.style.display==='none'||el.style.display==='';
+  el.style.display=show?'block':'none';
+  if(show) el.querySelector('textarea').focus();
+}
+function onNota(key,val){
+  if(val.trim()) slot().notes[key]=val; else delete slot().notes[key];
+  var nb=document.getElementById('nb_'+key);
+  if(nb) nb.className='nbt'+(val.trim()?' on':'');
+  saveStorage();
+}
+
+// ── SEZIONI ──────────────────────────────────────────────────
+function toggleSec(sid){
+  var b=document.getElementById('sb_'+sid), c=document.getElementById('chev_'+sid);
+  if(!b) return;
+  var isOpen=b.style.display!=='none';
+  b.style.display=isOpen?'none':'block';
+  if(c) c.style.transform=isOpen?'':'rotate(180deg)';
+  open[sid]=!isOpen;
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderTabs(){
+  var html='';
+  for(var i=0;i<DEPTS.length;i++){
+    var d=DEPTS[i];
+    html+='<button class="dept-tab'+(d.id===dept?' active':'')+'" onclick="switchDept(\''+d.id+'\')">'+d.name+'</button>';
+  }
+  document.getElementById('dept-tabs').innerHTML=html;
+}
+
+function switchDept(dId){ dept=dId; renderTabs(); renderDept(dId); }
+
+function renderDept(dId){
+  var d=DEPTS.filter(function(x){return x.id===dId;})[0];
+  var sc=slot().scores, nt=slot().notes;
+  var html='';
+  for(var si=0;si<d.secs.length;si++){
+    var sec=d.secs[si];
+    var sid=dId+'_'+sec.n;
+    var isOpen=open[sid]!==false;
+    var r=calcSec(dId,sec.n,sec.items);
+    var pct=r.scored>0?Math.round((r.tot/r.max)*100):0;
+    var slabel=r.scored>0?r.tot+'/'+r.max+' ('+pct+'%)':'—';
+    var scls=r.scored>0?(pct>=80?'g':pct>=60?'o':'r'):'';
+    var items='';
+    for(var ii=0;ii<sec.items.length;ii++){
+      var key=k(dId,sec.n,ii);
+      var score=sc[key];
+      var note=nt[key]||'';
+      var btns='';
+      for(var s=0;s<=5;s++) btns+='<button id="b_'+key+'_'+s+'" class="sbt'+(score===s?' s'+s:'')+'" onclick="setScore(\''+key+'\','+s+')">'+s+'</button>';
+      btns+='<button id="bna_'+key+'" class="sbt sna'+(score==='na'?' active-na':'')+'" onclick="setNA(\''+key+'\')">N/A</button>';
+      items+='<div class="item-row"><div class="item-lbl">'+sec.items[ii]+'</div><div class="item-ctrl"><div class="sbts">'+btns+'</div><button id="nb_'+key+'" class="nbt'+(note?' on':'')+'" onclick="toggleNota(\''+key+'\')">📝</button></div><div id="na_'+key+'" class="nota" style="display:'+(note?'block':'none')+'"><textarea placeholder="Note..." oninput="onNota(\''+key+'\',this.value)">'+note+'</textarea></div></div>';
+    }
+    html+='<div class="section-container"><div class="sec-head" onclick="toggleSec(\''+sid+'\')"><h3>'+sec.n+'. '+sec.name+'</h3><span id="ss_'+sid+'" class="sec-score '+scls+'">'+slabel+'</span><span id="chev_'+sid+'" class="sec-chev" style="transform:'+(isOpen?'rotate(180deg)':'')+'">▼</span></div><div class="sec-body" id="sb_'+sid+'" style="display:'+(isOpen?'block':'none')+'">'+items+'</div></div>';
+  }
+  document.getElementById('content').innerHTML=html;
+}
+
+function updateSummary(){
+  var html='',gt=0,gm=0;
+  for(var i=0;i<DEPTS.length;i++){
+    var d=DEPTS[i], r=calcDept(d.id);
+    var pct=r.max>0?Math.round((r.tot/r.max)*100):0;
+    var cls=pct>=80?'g':pct>=60?'o':'r';
+    gt+=r.tot; gm+=r.max;
+    html+='<div class="sumrow"><div class="sname">'+d.name+'</div><div class="sbar-w"><div class="sbar"><div class="sfill '+cls+'" style="width:'+pct+'%"></div></div></div><div class="sval '+cls+'">'+r.tot+'/'+r.max+'<br><small>'+pct+'%</small></div></div>';
+  }
+  var tp=gm>0?Math.round((gt/gm)*100):0;
+  var tc=tp>=80?'g':tp>=60?'o':'r';
+  html+='<div class="sumrow sumtot"><div class="sname">TOTALE</div><div class="sbar-w"><div class="sbar"><div class="sfill '+tc+'" style="width:'+tp+'%"></div></div></div><div class="sval '+tc+'"><strong>'+gt+'/'+gm+'</strong><br><small>'+tp+'%</small></div></div>';
+  document.getElementById('sumrows').innerHTML=html;
+}
+
+// ── AZIONI ───────────────────────────────────────────────────
+function doSave(){
+  syncMeta(); saveStorage(); renderNaveBar();
+  var t=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hsub').textContent='Salvato alle '+t;
+  var toast=document.getElementById('toast');
+  toast.style.display='block';
+  setTimeout(function(){ toast.style.display='none'; },2000);
+}
+
+function doExport(){
+  syncMeta();
+  var s=slot();
+  var nave=(s.meta.nave||'audit').replace(/\s+/g,'_');
+  var date=(s.meta.date||today()).replace(/-/g,'');
+  var fname='GNV_'+nave+'_'+date+'.json';
+  var json=JSON.stringify({version:4,exportedAt:new Date().toISOString(),data:s},null,2);
+  var blob=new Blob([json],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=fname;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+}
+
+function doImport(){ document.getElementById('fimport').value=''; document.getElementById('fimport').click(); }
+
+function onImport(ev){
+  var file=ev.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var p=JSON.parse(e.target.result);
+      var data=p.data||p;
+      if(!data.meta||!data.scores) throw new Error('Formato non valido');
+      slots.push(data);
+      cur=slots.length-1;
+      saveStorage(); loadMeta(); renderNaveBar(); renderDept(dept); updateSummary();
+      alert('✓ Audit importato: '+(data.meta.nave||'senza nome'));
+    }catch(err){ alert('Errore: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+function doReset(){
+  if(!confirm('Cancellare tutti i punteggi di questo audit?')) return;
+  slot().scores={}; slot().notes={};
+  saveStorage(); renderDept(dept); updateSummary();
+}
+
+
+// ── EXPORT EXCEL XLSX OFFLINE ────────────────────────────────
+function cleanFileName(s){ return (s||'audit').replace(/[^a-zA-Z0-9_\-àèéìòóùÀÈÉÌÒÓÙ ]/g,'').trim().replace(/\s+/g,'_') || 'audit'; }
+function escXml(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function excelCol(n){ var s=''; while(n>0){ var m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; }
+function cellXml(v,row,col){
+  var r=excelCol(col)+row;
+  if(v===undefined || v===null || v==='') return '';
+  if(typeof v==='number' && isFinite(v)) return '<c r="'+r+'"><v>'+v+'</v></c>';
+  return '<c r="'+r+'" t="inlineStr"><is><t>'+escXml(v)+'</t></is></c>';
+}
+function sheetXml(rows, widths){
+  var xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  xml+='<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+  if(widths && widths.length){
+    xml+='<cols>';
+    for(var i=0;i<widths.length;i++) xml+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+widths[i]+'" customWidth="1"/>';
+    xml+='</cols>';
+  }
+  xml+='<sheetData>';
+  for(var r=0;r<rows.length;r++){
+    xml+='<row r="'+(r+1)+'">';
+    var row=rows[r]||[];
+    for(var c=0;c<row.length;c++) xml+=cellXml(row[c],r+1,c+1);
+    xml+='</row>';
+  }
+  xml+='</sheetData></worksheet>';
+  return xml;
+}
+function crcTable(){
+  var t=[];
+  for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1); t[n]=c>>>0; }
+  return t;
+}
+var CRC_TABLE=null;
+function crc32(bytes){
+  if(!CRC_TABLE) CRC_TABLE=crcTable();
+  var c=0xffffffff;
+  for(var i=0;i<bytes.length;i++) c=CRC_TABLE[(c^bytes[i])&255]^(c>>>8);
+  return (c^0xffffffff)>>>0;
+}
+function u16(a,n){ a.push(n&255,(n>>>8)&255); }
+function u32(a,n){ a.push(n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255); }
+function concatBytes(parts){
+  var len=0,i; for(i=0;i<parts.length;i++) len+=parts[i].length;
+  var out=new Uint8Array(len),off=0;
+  for(i=0;i<parts.length;i++){ out.set(parts[i],off); off+=parts[i].length; }
+  return out;
+}
+function makeZip(files){
+  var enc=new TextEncoder();
+  var fileParts=[], centralParts=[], offset=0;
+  for(var i=0;i<files.length;i++){
+    var nameBytes=enc.encode(files[i].name);
+    var dataBytes=enc.encode(files[i].data);
+    var crc=crc32(dataBytes);
+    var lh=[];
+    u32(lh,0x04034b50); u16(lh,20); u16(lh,0); u16(lh,0); u16(lh,0); u16(lh,0);
+    u32(lh,crc); u32(lh,dataBytes.length); u32(lh,dataBytes.length); u16(lh,nameBytes.length); u16(lh,0);
+    var local=concatBytes([Uint8Array.from(lh),nameBytes,dataBytes]);
+    fileParts.push(local);
+    var ch=[];
+    u32(ch,0x02014b50); u16(ch,20); u16(ch,20); u16(ch,0); u16(ch,0); u16(ch,0); u16(ch,0);
+    u32(ch,crc); u32(ch,dataBytes.length); u32(ch,dataBytes.length); u16(ch,nameBytes.length); u16(ch,0); u16(ch,0); u16(ch,0); u16(ch,0); u32(ch,0); u32(ch,offset);
+    centralParts.push(concatBytes([Uint8Array.from(ch),nameBytes]));
+    offset+=local.length;
+  }
+  var centralStart=offset;
+  var centralSize=0; for(var j=0;j<centralParts.length;j++) centralSize+=centralParts[j].length;
+  var end=[];
+  u32(end,0x06054b50); u16(end,0); u16(end,0); u16(end,files.length); u16(end,files.length); u32(end,centralSize); u32(end,centralStart); u16(end,0);
+  return new Blob(fileParts.concat(centralParts).concat([Uint8Array.from(end)]),{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function makeXlsxBlob(sheets){
+  var files=[];
+  var overrides='';
+  for(var i=0;i<sheets.length;i++) overrides+='<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  files.push({name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+overrides+'</Types>'});
+  files.push({name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'});
+  var sheetTags='', relTags='';
+  for(var s=0;s<sheets.length;s++){
+    var safeName=String(sheets[s].name||('Foglio'+(s+1))).replace(/[\\\/\?\*\[\]:]/g,' ').substring(0,31) || ('Foglio'+(s+1));
+    sheetTags+='<sheet name="'+escXml(safeName)+'" sheetId="'+(s+1)+'" r:id="rId'+(s+1)+'"/>';
+    relTags+='<Relationship Id="rId'+(s+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+(s+1)+'.xml"/>';
+    files.push({name:'xl/worksheets/sheet'+(s+1)+'.xml',data:sheetXml(sheets[s].rows,sheets[s].widths)});
+  }
+  files.push({name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheetTags+'</sheets></workbook>'});
+  files.push({name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+relTags+'</Relationships>'});
+  return makeZip(files);
+}
+function downloadOrShare(blob, fname){
+  var file;
+  try{ file=new File([blob], fname, {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); }catch(e){ file=null; }
+  if(file && navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:fname}).catch(function(){ forceDownload(blob,fname); });
+  } else forceDownload(blob,fname);
+}
+function forceDownload(blob, fname){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=fname;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+}
+function scoreVal(v){ if(v==='na') return 'N/A'; if(v!==undefined) return v; return ''; }
+function collectNote(notes, dId, sn, count){
+  var arr=[];
+  for(var i=0;i<count;i++){ var key=k(dId,sn,i); if(notes[key]) arr.push((i+1)+': '+notes[key]); }
+  return arr.join(' | ');
+}
+function doExcel(){
+  syncMeta();
+  var s=slot(), sc=s.scores, nt=s.notes, m=s.meta;
+  var dateStr=m.date?m.date.split('-').reverse().join('/'):'', nave=m.nave||'', ver=m.verificatore||'';
+
+  var grid=[];
+  grid.push(['GNV AUDIT DI BORDO - GRIGLIA VALORI']);
+  grid.push(['Nave', nave]);
+  grid.push(['Data', dateStr]);
+  grid.push(['Verificatore', ver]);
+  grid.push([]);
+  var h=['Reparto','N. Sezione','Sezione'];
+  for(var vi=1;vi<=15;vi++) h.push('V'+(vi<10?'0':'')+vi);
+  h.push('Note');
+  grid.push(h);
+  for(var di=0;di<DEPTS.length;di++){
+    var d=DEPTS[di];
+    for(var si=0;si<d.secs.length;si++){
+      var sec=d.secs[si];
+      var row=[d.name,sec.n,sec.name];
+      for(var ii=0;ii<15;ii++) row.push(ii<sec.items.length?scoreVal(sc[k(d.id,sec.n,ii)]):'');
+      row.push(collectNote(nt,d.id,sec.n,sec.items.length));
+      grid.push(row);
+    }
+  }
+
+  var det=[];
+  det.push(['GNV AUDIT DI BORDO - DETTAGLIO']);
+  det.push(['Nave', nave]);
+  det.push(['Data', dateStr]);
+  det.push(['Verificatore', ver]);
+  det.push([]);
+  det.push(['Reparto','N. Sezione','Sezione','N. Item','Voce','Valore','Note']);
+  for(var di2=0;di2<DEPTS.length;di2++){
+    var d2=DEPTS[di2];
+    for(var si2=0;si2<d2.secs.length;si2++){
+      var sec2=d2.secs[si2];
+      for(var jj=0;jj<sec2.items.length;jj++){
+        var key=d2.id+'_'+sec2.n+'_'+jj;
+        det.push([d2.name,sec2.n,sec2.name,jj+1,sec2.items[jj],scoreVal(sc[key]),nt[key]||'']);
+      }
+    }
+  }
+
+  var sum=[];
+  sum.push(['GNV AUDIT DI BORDO - RIEPILOGO']);
+  sum.push(['Nave', nave]);
+  sum.push(['Data', dateStr]);
+  sum.push(['Verificatore', ver]);
+  sum.push([]);
+  sum.push(['Reparto','Totale','Massimo','Percentuale']);
+  var gt=0, gm=0;
+  for(var di3=0;di3<DEPTS.length;di3++){
+    var r=calcDept(DEPTS[di3].id), pct=r.max>0?Math.round((r.tot/r.max)*100):0;
+    gt+=r.tot; gm+=r.max;
+    sum.push([DEPTS[di3].name,r.tot,r.max,pct+'%']);
+  }
+  var tp=gm>0?Math.round((gt/gm)*100):0;
+  sum.push(['TOTALE',gt,gm,tp+'%']);
+
+  var blob=makeXlsxBlob([
+    {name:'Griglia valori', rows:grid, widths:[18,10,32,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,42]},
+    {name:'Dettaglio', rows:det, widths:[18,10,32,10,70,10,45]},
+    {name:'Riepilogo', rows:sum, widths:[20,12,12,14]}
+  ]);
+  var fname='GNV_'+cleanFileName(nave)+'_'+(m.date||today()).replace(/-/g,'')+'_valori.xlsx';
+  downloadOrShare(blob,fname);
+}
+
+function doPrint(){
+  syncMeta();
+  var s=slot(), sc=s.scores, nt=s.notes, m=s.meta;
+  var dateStr=m.date?m.date.split('-').reverse().join('/'):'—';
+
+  var blocks=[];
+  for(var di=0;di<DEPTS.length;di++){
+    var dp=DEPTS[di];
+    for(var si=0;si<dp.secs.length;si++) blocks.push({dept:dp,sec:dp.secs[si]});
+  }
+
+  function esc(t){ return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function buildBlock(b){
+    var dp=b.dept, sec=b.sec;
+    var h='<div class="pb"><div class="ph"><span class="phn">N</span><span class="phd">'+esc(dp.name)+'</span><span class="phs">'+sec.n+' '+esc(sec.name)+'</span><span class="php">PT</span></div>';
+    for(var r=1;r<=15;r++){
+      var idx=r-1, item=sec.items[idx], key=dp.id+'_'+sec.n+'_'+idx;
+      var score=sc[key], note=nt[key]||'';
+      if(item){
+        var sd=score==='na'?'N/A':(score!==undefined?String(score):'');
+        var nc=note?'<i class="pnote">'+esc(note)+'</i>':'';
+        var scls='ppt'+(score!==undefined?' f':'')+(score==='na'?' na':'');
+        h+='<div class="pr"><span class="prn">'+r+'</span><span class="prt">'+esc(item)+nc+'</span><span class="'+scls+'">'+sd+'</span></div>';
+      } else {
+        h+='<div class="pr pe"><span class="prn">'+r+'</span><span class="prt">&nbsp;</span><span class="ppt"></span></div>';
+      }
+    }
+    return h+'</div>';
+  }
+
+  var content='';
+  var COLS=3;
+  for(var i=0;i<blocks.length;i+=COLS){
+    content+='<div class="rw">';
+    for(var j=i;j<Math.min(i+COLS,blocks.length);j++) content+=buildBlock(blocks[j]);
+    for(var e=Math.min(i+COLS,blocks.length);e<i+COLS;e++) content+='<div class="pbe"></div>';
+    content+='</div>';
+  }
+  content+='<div class="sum"><div class="sh">RIEPILOGO PUNTEGGI</div>';
+  var gt=0,gm=0;
+  for(var di=0;di<DEPTS.length;di++){
+    var r2=calcDept(DEPTS[di].id), pct=r2.max>0?Math.round((r2.tot/r2.max)*100):0;
+    gt+=r2.tot; gm+=r2.max;
+    content+='<div class="sr"><span class="sn">'+DEPTS[di].name+'</span><span class="sv">'+r2.tot+'/'+r2.max+'</span><span class="sp">'+pct+'%</span></div>';
+  }
+  var tp=gm>0?Math.round((gt/gm)*100):0;
+  content+='<div class="sr st"><span class="sn">TOTALE</span><span class="sv">'+gt+'/'+gm+'</span><span class="sp">'+tp+'%</span></div></div>';
+
+  var page='<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<title>GNV Audit '+esc(m.nave||'')+' '+esc(dateStr)+'</title>'+
+    '<style>'+
+    '*{box-sizing:border-box;margin:0;padding:0;}'+
+    'body{font-family:Arial,Helvetica,sans-serif;font-size:6pt;color:#000;background:#fff;padding:4mm;}'+
+    '@page{size:A4 landscape;margin:7mm;}'+
+    '.bar{display:flex;align-items:center;gap:10pt;margin-bottom:5pt;padding-bottom:4pt;border-bottom:1.5pt solid #000;}'+
+    '.bar h1{font-size:11pt;font-weight:bold;flex:1;}'+
+    '.bmeta{font-size:8pt;display:flex;gap:14pt;flex-wrap:wrap;}'+
+    '.btn{padding:8pt 16pt;border:none;border-radius:8pt;font-size:11pt;font-weight:bold;cursor:pointer;}'+
+    '.bbtn{background:#555;color:#fff;}'+
+    '.sbtn{background:#003087;color:#fff;}'+
+    '.rw{display:flex;gap:3pt;margin-bottom:3pt;align-items:flex-start;page-break-inside:avoid;break-inside:avoid;}'+
+    '.pb{border:.75pt solid #333;flex:1 1 0;min-width:0;}'+
+    '.pbe{flex:1 1 0;}'+
+    '.ph{background:#1a3a6e;display:flex;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.phn{width:12pt;min-width:12pt;text-align:center;border-right:.4pt solid rgba(255,255,255,.4);padding:2pt 0;font-size:5.5pt;color:#fff;flex-shrink:0;}'+
+    '.phd{font-size:5.5pt;font-weight:bold;padding:2pt;flex-shrink:0;border-right:.4pt solid rgba(255,255,255,.4);color:#fff;white-space:nowrap;}'+
+    '.phs{font-size:5pt;font-weight:bold;padding:2pt;flex:1;color:#fff;line-height:1.2;min-width:0;}'+
+    '.php{width:14pt;min-width:14pt;text-align:center;padding:2pt 0;font-size:5.5pt;color:#fff;border-left:.4pt solid rgba(255,255,255,.4);flex-shrink:0;}'+
+    '.pr{display:flex;border-bottom:.4pt solid #ccc;}'+
+    '.pr:last-child{border-bottom:none;}'+
+    '.prn{width:12pt;min-width:12pt;text-align:center;border-right:.4pt solid #ccc;padding:1.5pt 0;font-size:5.5pt;color:#aaa;flex-shrink:0;}'+
+    '.prt{flex:1;padding:1.5pt 2pt;font-size:5.5pt;line-height:1.2;border-right:.4pt solid #ccc;min-width:0;word-break:break-word;}'+
+    '.ppt{width:14pt;min-width:14pt;text-align:center;padding:1.5pt 0;font-size:7pt;font-weight:bold;flex-shrink:0;}'+
+    '.ppt.f{background:#d0e8ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.ppt.na{background:#e8e8e8;color:#666;font-size:5pt;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.pe .prt{color:#e0e0e0;}'+
+    'i.pnote{display:block;font-style:italic;color:#444;font-size:5pt;margin-top:1pt;border-top:.3pt solid #ddd;padding-top:1pt;font-weight:normal;}'+
+    '.sum{margin-top:5pt;border:.75pt solid #333;page-break-inside:avoid;break-inside:avoid;}'+
+    '.sh{background:#1a3a6e;color:#fff;padding:3pt 7pt;font-size:8pt;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'+
+    '.sr{display:flex;border-bottom:.4pt solid #ccc;padding:2pt 7pt;font-size:7.5pt;}'+
+    '.st{font-weight:bold;border-top:1.5pt solid #333;}'+
+    '.sn{flex:1;}.sv{min-width:55pt;text-align:right;}.sp{min-width:38pt;text-align:right;}'+
+    '@media print{.bar{display:none!important;}}'+
+    '</style></head><body>'+
+    '<div class="bar">'+
+      '<button class="btn bbtn" onclick="history.back()">← Torna</button>'+
+      '<h1>GNV — Audit di Bordo</h1>'+
+      '<div class="bmeta">'+
+        '<span><b>Nave:</b> '+esc(m.nave||'—')+'</span>'+
+        '<span><b>Data:</b> '+dateStr+'</span>'+
+        '<span><b>Verificatore:</b> '+esc(m.verificatore||'—')+'</span>'+
+      '</div>'+
+      '<button class="btn sbtn" onclick="window.print()">💾 Salva su File</button>'+
+    '</div>'+
+    content+
+    '</body></html>';
+
+  document.open();
+  document.write(page);
+  document.close();
+}
+
+
+
+// ── EXPORT EXCEL - FORMATO ORIGINALE GNV ─────────────────────
+// Sovrascrive doExcel(): mantiene la stessa logica punteggi, ma genera il file nel formato a blocchi del modello GNV.
+function makeGnvStylesXml(){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+  '<fonts count="4">'+
+    '<font><sz val="11"/><name val="Calibri"/></font>'+
+    '<font><sz val="6"/><name val="Calibri"/></font>'+
+    '<font><b/><sz val="6"/><name val="Calibri"/></font>'+
+    '<font><b/><sz val="6"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'+
+  '</fonts>'+
+  '<fills count="6">'+
+    '<fill><patternFill patternType="none"/></fill>'+
+    '<fill><patternFill patternType="gray125"/></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFD9D2E9"/><bgColor indexed="64"/></patternFill></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF17365D"/><bgColor indexed="64"/></patternFill></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill>'+
+  '</fills>'+
+  '<borders count="3">'+
+    '<border><left/><right/><top/><bottom/><diagonal/></border>'+
+    '<border><left style="thin"><color rgb="FFB7B7B7"/></left><right style="thin"><color rgb="FFB7B7B7"/></right><top style="thin"><color rgb="FFB7B7B7"/></top><bottom style="thin"><color rgb="FFB7B7B7"/></bottom><diagonal/></border>'+
+    '<border><left style="thin"><color rgb="FF555555"/></left><right style="thin"><color rgb="FF555555"/></right><top style="thin"><color rgb="FF555555"/></top><bottom style="thin"><color rgb="FF555555"/></bottom><diagonal/></border>'+
+  '</borders>'+
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+  '<cellXfs count="8">'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="0" fontId="2" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="1" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+  '</cellXfs>'+
+  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'+
+  '<dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>'+
+  '</styleSheet>';
+}
+function gnvCellXml(cell,row,col){
+  if(!cell) return '';
+  var r=excelCol(col)+row;
+  var s=(cell.s!==undefined && cell.s!==null)?' s="'+cell.s+'"':'';
+  var v=cell.v;
+  if(v===undefined || v===null || v==='') return '<c r="'+r+'"'+s+'/>';
+  if(typeof v==='number' && isFinite(v)) return '<c r="'+r+'"'+s+'><v>'+v+'</v></c>';
+  return '<c r="'+r+'"'+s+' t="inlineStr"><is><t>'+escXml(v)+'</t></is></c>';
+}
+function makeGnvWorksheetXml(cells,widths,rowHeights,merges,maxRows,maxCols){
+  var xml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  xml+='<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  xml+='<sheetViews><sheetView workbookViewId="0" zoomScale="50" zoomScaleNormal="50"/></sheetViews>';
+  xml+='<cols>';
+  for(var i=0;i<widths.length;i++) xml+='<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+widths[i]+'" customWidth="1"/>';
+  xml+='</cols><sheetData>';
+  for(var r=1;r<=maxRows;r++){
+    var ht=rowHeights[r-1]||15;
+    xml+='<row r="'+r+'" ht="'+ht+'" customHeight="1">';
+    var row=cells[r-1]||[];
+    for(var c=1;c<=maxCols;c++) if(row[c-1]) xml+=gnvCellXml(row[c-1],r,c);
+    xml+='</row>';
+  }
+  xml+='</sheetData>';
+  if(merges.length){
+    xml+='<mergeCells count="'+merges.length+'">';
+    for(var m=0;m<merges.length;m++) xml+='<mergeCell ref="'+merges[m]+'"/>';
+    xml+='</mergeCells>';
+  }
+  xml+='<pageMargins left="0.25" right="0.25" top="0.25" bottom="0.25" header="0.1" footer="0.1"/>';
+  xml+='<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>';
+  xml+='</worksheet>';
+  return xml;
+}
+function makeGnvFormattedXlsxBlob(sheetXml){
+  var files=[];
+  files.push({name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'});
+  files.push({name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'});
+  files.push({name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>'});
+  files.push({name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'});
+  files.push({name:'xl/styles.xml',data:makeGnvStylesXml()});
+  files.push({name:'xl/worksheets/sheet1.xml',data:sheetXml});
+  return makeZip(files);
+}
+function normalizeDeptForGround(name,id){ return id==='selfservice' ? 'SELF SERVICE - DINING' : name; }
+function doExcel(){
+  syncMeta();
+  var s=slot(), sc=s.scores, nt=s.notes, m=s.meta;
+  var blocks=[];
+  for(var di=0;di<DEPTS.length;di++){
+    var d=DEPTS[di];
+    for(var si=0;si<d.secs.length;si++) blocks.push({dept:normalizeDeptForGround(d.name,d.id), deptId:d.id, sec:d.secs[si]});
+  }
+  var blocksPerRow=6, strideC=6, strideR=21, rowsPerBlock=17, maxCols=35;
+  var blockRows=Math.ceil(blocks.length/blocksPerRow);
+  var maxRows=blockRows*strideR-4;
+  var cells=[], rowHeights=[], widths=[], merges=[];
+  for(var r=0;r<maxRows;r++){ cells[r]=[]; rowHeights[r]=12; }
+  for(var c=0;c<maxCols;c++){
+    var pos=c%strideC;
+    widths[c]=pos===0?3.3:pos===1?31.5:pos===2?4.2:pos===3?2.0:pos===4?8.0:3.0;
+  }
+  function setCell(r,c,v,style){ if(!cells[r-1]) cells[r-1]=[]; cells[r-1][c-1]={v:v,s:style}; }
+  function textAt(r,c){ return cells[r-1] && cells[r-1][c-1] ? String(cells[r-1][c-1].v||'') : ''; }
+  for(var bi=0;bi<blocks.length;bi++){
+    var br=Math.floor(bi/blocksPerRow), bc=bi%blocksPerRow;
+    var r0=br*strideR+1, c0=bc*strideC+1;
+    var b=blocks[bi], sec=b.sec;
+    setCell(r0,c0+1,b.dept,1); setCell(r0,c0+2,'',1);
+    merges.push(excelCol(c0+1)+r0+':'+excelCol(c0+2)+r0);
+    setCell(r0+1,c0,sec.n,2);
+    setCell(r0+1,c0+1,String(sec.name||'').toUpperCase(),3);
+    setCell(r0+1,c0+2,'',6); setCell(r0+1,c0+3,'',6); setCell(r0+1,c0+4,'',7);
+    for(var ii=0;ii<15;ii++){
+      var rr=r0+2+ii, key=k(b.deptId,sec.n,ii), item=sec.items[ii];
+      setCell(rr,c0,ii+1,2);
+      if(item){
+        setCell(rr,c0+1,String(item).toUpperCase(),4);
+        setCell(rr,c0+2,scoreVal(sc[key]),5);
+        setCell(rr,c0+4,nt[key]||'',6);
+      } else {
+        setCell(rr,c0+1,'',4); setCell(rr,c0+2,'',5); setCell(rr,c0+4,'',6);
+      }
+      setCell(rr,c0+3,'',6);
+    }
+  }
+  for(var rr=1;rr<=maxRows;rr++){
+    var pos=(rr-1)%strideR;
+    if(pos===0) rowHeights[rr-1]=15;
+    else if(pos===1) rowHeights[rr-1]=17;
+    else if(pos>=2 && pos<17){
+      var long=0;
+      for(var bc2=0;bc2<blocksPerRow;bc2++){
+        var txt=textAt(rr,bc2*strideC+2); if(txt.length>long) long=txt.length;
+      }
+      rowHeights[rr-1]=long>95?35:(long>65?28:(long>48?22:17));
+    } else rowHeights[rr-1]=12;
+  }
+  var sheetXml=makeGnvWorksheetXml(cells,widths,rowHeights,merges,maxRows,maxCols);
+  var blob=makeGnvFormattedXlsxBlob(sheetXml);
+  var nave=m.nave||'audit';
+  var fname='GNV_'+cleanFileName(nave)+'_'+(m.date||today()).replace(/-/g,'')+'_audit.xlsx';
+  downloadOrShare(blob,fname);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+loadStorage();
+loadMeta();
+renderNaveBar();
+renderTabs();
+renderDept(dept);
+updateSummary();
+</script>
+</body>
+</html>
