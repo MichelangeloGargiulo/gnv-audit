@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GNV — Crew Roles</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#eef2f7;color:#1a2b4a;font-size:14px;}
+.header{background:linear-gradient(135deg,#002a6e,#004ab5);color:white;padding:14px 16px;position:sticky;top:0;z-index:100;box-shadow:0 3px 10px rgba(0,0,0,0.3);}
+.header h1{font-size:17px;font-weight:700;}
+.header p{font-size:11px;opacity:0.8;margin-top:2px;}
+.card{background:white;margin:12px;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.1);}
+.row{display:flex;align-items:stretch;border-bottom:1px solid #f0f4f9;}
+.row:last-child{border-bottom:none;}
+.row.hdr{background:#17365d;}
+.row.tot{background:#eef2f7;}
+.num{width:36px;min-width:36px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#7a8eac;border-right:1px solid #f0f4f9;}
+.hdr .num{color:rgba(255,255,255,0.6);}
+.role{flex:1.2;padding:12px 10px;font-size:12px;font-weight:700;color:#1a2b4a;border-right:1px solid #f0f4f9;display:flex;align-items:center;line-height:1.3;}
+.hdr .role{color:white;}
+.tot .role{color:#002a6e;font-size:13px;}
+.fields{flex:2;display:flex;flex-direction:column;}
+.field{display:flex;border-bottom:1px solid #f0f4f9;}
+.field:last-child{border-bottom:none;}
+.field label{width:76px;min-width:76px;font-size:10px;font-weight:700;color:#7a8eac;text-transform:uppercase;padding:8px;display:flex;align-items:center;border-right:1px solid #f0f4f9;background:#f7fafd;}
+.field input{flex:1;border:none;padding:8px 10px;font-size:13px;color:#1a2b4a;outline:none;background:white;}
+.field input:focus{background:#f0f7ff;}
+.hdr .fields{justify-content:center;align-items:center;padding:10px;}
+.hdr .fields span{color:rgba(255,255,255,0.85);font-size:11px;font-weight:600;}
+.tot-val{flex:2;display:flex;align-items:center;padding:12px 16px;font-size:22px;font-weight:700;color:#002a6e;}
+.actions{padding:12px;display:flex;gap:8px;}
+.btn{flex:1;padding:14px;border-radius:11px;border:none;font-size:13px;font-weight:700;cursor:pointer;}
+.b1{background:#003087;color:white;}
+.b2{background:#276749;color:white;}
+.b3{background:#e53e3e;color:white;flex:0.4;}
+.toast{text-align:center;font-size:12px;color:#276749;padding:0 12px 8px;display:none;font-weight:600;}
+.spacer{height:24px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🚢 GNV — Crew Roles</h1>
+  <p id="hsub">Inserisci i dati e premi Excel</p>
+</div>
+
+<div class="card">
+  <div class="row hdr">
+    <div class="num">#</div>
+    <div class="role">Ruolo</div>
+    <div class="fields"><span>Nome / Cognome / Crew gestito</span></div>
+  </div>
+  <div id="rows"></div>
+  <div class="row tot">
+    <div class="num"></div>
+    <div class="role">TOTALE CREW</div>
+    <div class="tot-val" id="total">0</div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn b1" onclick="doSave()">💾 Salva</button>
+  <button class="btn b2" onclick="doExcel()">📊 Excel</button>
+  <button class="btn b3" onclick="doReset()">🗑️</button>
+</div>
+<div class="toast" id="toast"></div>
+<div class="spacer"></div>
+
+<script>
+var ROLES=['HOTEL MANAGER','COMMISSARIO HOSPITALITY','SHOP MANAGER','F&B MANAGER',"MAITRE D'HOTEL",'EXECUTIVE CHEF','CHIEF HOUSEKEEPER'];
+var data=[];
+
+function load(){
+  try{var d=localStorage.getItem('gnv_crew3');if(d)data=JSON.parse(d);}catch(e){}
+  if(!data.length) data=ROLES.map(function(){return{nome:'',cognome:'',crew:''};});
+}
+function save(){try{localStorage.setItem('gnv_crew3',JSON.stringify(data));}catch(e){}}
+function calcTotal(){var t=0;data.forEach(function(d){var v=parseInt(d.crew);if(!isNaN(v))t+=v;});return t;}
+function updateTotal(){document.getElementById('total').textContent=calcTotal();}
+function esc(v){return(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+function render(){
+  var html='';
+  ROLES.forEach(function(role,i){
+    var d=data[i]||{nome:'',cognome:'',crew:''};
+    html+='<div class="row"><div class="num">'+(i+1)+'</div><div class="role">'+role+'</div><div class="fields">'+
+      '<div class="field"><label>Nome</label><input type="text" value="'+esc(d.nome)+'" oninput="upd('+i+',\'nome\',this.value)" placeholder="Nome"></div>'+
+      '<div class="field"><label>Cognome</label><input type="text" value="'+esc(d.cognome)+'" oninput="upd('+i+',\'cognome\',this.value)" placeholder="Cognome"></div>'+
+      '<div class="field"><label>Crew</label><input type="number" min="0" value="'+esc(d.crew)+'" oninput="upd('+i+',\'crew\',this.value)" placeholder="N. persone"></div>'+
+      '</div></div>';
+  });
+  document.getElementById('rows').innerHTML=html;
+  updateTotal();
+}
+
+function upd(i,field,val){
+  if(!data[i])data[i]={nome:'',cognome:'',crew:''};
+  data[i][field]=val;
+  if(field==='crew')updateTotal();
+  save();
+}
+
+function doSave(){
+  save();
+  var t=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('hsub').textContent='Salvato alle '+t;
+  showToast('✓ Salvato');
+}
+
+function doReset(){
+  if(!confirm('Cancellare tutti i dati?'))return;
+  data=ROLES.map(function(){return{nome:'',cognome:'',crew:''};});
+  save();render();
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(function(){t.style.display='none';},2000);
+}
+
+// ── ZIP / XLSX ────────────────────────────────────────────────
+function crcTable(){var t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;}
+var CRC=null;
+function crc32(b){if(!CRC)CRC=crcTable();var c=0xffffffff;for(var i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xffffffff)>>>0;}
+function u16(a,n){a.push(n&255,(n>>>8)&255);}
+function u32(a,n){a.push(n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255);}
+function concat(parts){var len=0,i;for(i=0;i<parts.length;i++)len+=parts[i].length;var out=new Uint8Array(len),off=0;for(i=0;i<parts.length;i++){out.set(parts[i],off);off+=parts[i].length;}return out;}
+function makeZip(files){
+  var enc=new TextEncoder(),fp=[],cp=[],offset=0;
+  for(var i=0;i<files.length;i++){
+    var nb=enc.encode(files[i].name),db=enc.encode(files[i].data),crc=crc32(db);
+    var lh=[];u32(lh,0x04034b50);u16(lh,20);u16(lh,0);u16(lh,0);u16(lh,0);u16(lh,0);u32(lh,crc);u32(lh,db.length);u32(lh,db.length);u16(lh,nb.length);u16(lh,0);
+    var local=concat([Uint8Array.from(lh),nb,db]);fp.push(local);
+    var ch=[];u32(ch,0x02014b50);u16(ch,20);u16(ch,20);u16(ch,0);u16(ch,0);u16(ch,0);u16(ch,0);u32(ch,crc);u32(ch,db.length);u32(ch,db.length);u16(ch,nb.length);u16(ch,0);u16(ch,0);u16(ch,0);u16(ch,0);u32(ch,0);u32(ch,offset);
+    cp.push(concat([Uint8Array.from(ch),nb]));offset+=local.length;
+  }
+  var cs=0;for(var j=0;j<cp.length;j++)cs+=cp[j].length;
+  var ed=[];u32(ed,0x06054b50);u16(ed,0);u16(ed,0);u16(ed,files.length);u16(ed,files.length);u32(ed,cs);u32(ed,offset);u16(ed,0);
+  return new Blob(fp.concat(cp).concat([Uint8Array.from(ed)]),{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function escX(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function excelCol(n){var s='';while(n>0){var m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+function cell(v,r,c,s){
+  var ref=excelCol(c)+r;
+  if(v===undefined||v===null||v==='') return s!==undefined?'<c r="'+ref+'" s="'+s+'"/>':'';
+  if(typeof v==='number'&&isFinite(v)) return '<c r="'+ref+'"'+(s!==undefined?' s="'+s+'"':'')+'><v>'+v+'</v></c>';
+  return '<c r="'+ref+'" t="inlineStr"'+(s!==undefined?' s="'+s+'"':'')+'><is><t>'+escX(v)+'</t></is></c>';
+}
+
+function makeStyles(){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+  '<fonts count="3">'+
+    '<font><sz val="11"/><name val="Arial"/></font>'+
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>'+
+    '<font><b/><sz val="12"/><name val="Arial"/></font>'+
+  '</fonts>'+
+  '<fills count="4">'+
+    '<fill><patternFill patternType="none"/></fill>'+
+    '<fill><patternFill patternType="gray125"/></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF17365D"/></patternFill></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFEEF2F7"/></patternFill></fill>'+
+  '</fills>'+
+  '<borders count="2">'+
+    '<border><left/><right/><top/><bottom/><diagonal/></border>'+
+    '<border><left style="thin"><color rgb="FFB7B7B7"/></left><right style="thin"><color rgb="FFB7B7B7"/></right><top style="thin"><color rgb="FFB7B7B7"/></top><bottom style="thin"><color rgb="FFB7B7B7"/></bottom><diagonal/></border>'+
+  '</borders>'+
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+  '<cellXfs count="5">'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>'+
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+    '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'+
+  '</cellXfs>'+
+  '</styleSheet>';
+}
+
+function doExcel(){
+  save();
+  var today=new Date().toLocaleDateString('it-IT');
+  var rows=[];
+
+  // Header row
+  var hr='<row r="1" ht="28" customHeight="1">';
+  hr+=cell('#',1,1,1)+cell('RUOLO',1,2,1)+cell('NOME',1,3,1)+cell('COGNOME',1,4,1)+cell('CREW GESTITO',1,5,1);
+  hr+='</row>';
+  rows.push(hr);
+
+  // Data rows
+  ROLES.forEach(function(role,i){
+    var d=data[i]||{nome:'',cognome:'',crew:''};
+    var r=i+2;
+    var rr='<row r="'+r+'" ht="22" customHeight="1">';
+    rr+=cell(i+1,r,1,3)+cell(role,r,2,2)+cell(d.nome,r,3,2)+cell(d.cognome,r,4,2)+cell(d.crew===''?'':parseInt(d.crew)||0,r,5,3);
+    rr+='</row>';
+    rows.push(rr);
+  });
+
+  // Total row
+  var tr=ROLES.length+2;
+  var tot=calcTotal();
+  var totalRow='<row r="'+tr+'" ht="26" customHeight="1">';
+  totalRow+=cell('',tr,1,4)+cell('TOTALE CREW',tr,2,4)+cell('',tr,3,4)+cell('',tr,4,4)+cell(tot,tr,5,4);
+  totalRow+='</row>';
+  rows.push(totalRow);
+
+  var wsXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'+
+    '<cols>'+
+      '<col min="1" max="1" width="5" customWidth="1"/>'+
+      '<col min="2" max="2" width="30" customWidth="1"/>'+
+      '<col min="3" max="3" width="20" customWidth="1"/>'+
+      '<col min="4" max="4" width="20" customWidth="1"/>'+
+      '<col min="5" max="5" width="16" customWidth="1"/>'+
+    '</cols>'+
+    '<sheetData>'+rows.join('')+'</sheetData>'+
+    '<pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>'+
+    '</worksheet>';
+
+  var files=[
+    {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+    {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:'xl/workbook.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Crew Roles" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+    {name:'xl/styles.xml',data:makeStyles()},
+    {name:'xl/worksheets/sheet1.xml',data:wsXml}
+  ];
+
+  var blob=makeZip(files);
+  var fname='GNV_Crew_'+today.replace(/\//g,'-')+'.xlsx';
+  var file;
+  try{file=new File([blob],fname,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}catch(e){file=null;}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:fname}).catch(function(){forceDownload(blob,fname);});
+  } else {
+    forceDownload(blob,fname);
+  }
+}
+
+function forceDownload(blob,fname){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=fname;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+  showToast('✓ Download avviato');
+}
+
+load();render();
+</script>
+</body>
+</html>
